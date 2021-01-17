@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Extensions.MetadataExtensions;
 using Npgsql.EntityFrameworkCore.PostgreSQL.TestUtilities;
 using Xunit;
 
@@ -27,6 +28,42 @@ namespace Npgsql.EntityFrameworkCore.PostgreSQL.Metadata
             Assert.Equal(2, interleavePrefix.Count);
             Assert.Equal("col_a", interleavePrefix[0]);
             Assert.Equal("col_b", interleavePrefix[1]);
+        }
+
+        [Fact]
+        public void GreenplumDistributeByColumnNames()
+        {
+            var modelBuilder = CreateConventionModelBuilder();
+
+            modelBuilder.Entity<Customer>()
+                .ToTable("customers", "my_schema")
+                .UseGreenplumDistributedBy(new List<string> { "col_a", "col_b" });
+
+            var entityType = modelBuilder.Model.FindEntityType(typeof(Customer));
+            var greenplumDistributedBy = entityType.GetGreenplumDistributedBy();
+
+            var distributeByColumns = greenplumDistributedBy.DistributeByColumnNames;
+            Assert.Equal(2, distributeByColumns.Count);
+            Assert.Equal("col_a", distributeByColumns[0]);
+            Assert.Equal("col_b", distributeByColumns[1]);
+        }
+
+        [Fact]
+        public void GreenplumDistributeRandomly()
+        {
+            var modelBuilder = CreateConventionModelBuilder();
+
+            modelBuilder.Entity<Customer>()
+                .ToTable("customers", "my_schema")
+                .UseGreenplumDistributedBy(NpgsqlGreenplumDistribution.Randomly);
+
+            var entityType = modelBuilder.Model.FindEntityType(typeof(Customer));
+            var greenplumDistributedBy = entityType.GetGreenplumDistributedBy();
+
+            var distributeByColumns = greenplumDistributedBy.DistributeByColumnNames;
+            Assert.Equal(2, distributeByColumns.Count);
+            Assert.Equal("col_a", distributeByColumns[0]);
+            Assert.Equal("col_b", distributeByColumns[1]);
         }
 
         [Fact]

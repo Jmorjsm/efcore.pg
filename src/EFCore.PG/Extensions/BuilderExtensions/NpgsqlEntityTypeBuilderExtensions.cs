@@ -6,6 +6,8 @@ using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Extensions.MetadataExtensions;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.Internal;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Utilities;
 using NpgsqlTypes;
@@ -321,6 +323,52 @@ namespace Microsoft.EntityFrameworkCore
 
         #endregion CockroachDB Interleave-in-parent
 
+        #region Distribute By
+
+        public static EntityTypeBuilder UseGreenplumDistributedBy(
+            [NotNull] this EntityTypeBuilder entityTypeBuilder,
+            [NotNull] List<string> columnNames)
+        {
+            Check.NotNull(entityTypeBuilder, nameof(entityTypeBuilder));
+            Check.NotNull(columnNames, nameof(columnNames));
+            Check.HasNoNulls(columnNames, nameof(columnNames));
+
+            // Check column name(s) exist.
+            foreach (var columnName in columnNames)
+            {
+                var property = entityTypeBuilder.Metadata.FindProperty(columnName);
+                if (property == null)
+                {
+                    throw new ArgumentException("Property not found on entity for distribution column: " + columnName, nameof(columnNames));
+                }
+            }
+
+            var distributeBy = entityTypeBuilder.Metadata.GetGreenplumDistributedBy();
+            distributeBy.DistributeByColumnNames = columnNames;
+
+            return entityTypeBuilder;
+        }
+
+        public static EntityTypeBuilder<TEntity> UseGreenplumDistributedBy<TEntity>(
+            [NotNull] this EntityTypeBuilder entityTypeBuilder,
+            [NotNull] List<string> columnNames)
+            where TEntity : class
+            => (EntityTypeBuilder<TEntity>)UseGreenplumDistributedBy((EntityTypeBuilder)entityTypeBuilder, columnNames);
+
+        public static EntityTypeBuilder UseGreenplumDistributedBy(
+            [NotNull] this EntityTypeBuilder entityTypeBuilder,
+            NpgsqlGreenplumDistribution distribution)
+        {
+            Check.NotNull(entityTypeBuilder, nameof(entityTypeBuilder));
+
+            var distributeBy = entityTypeBuilder.Metadata.GetGreenplumDistributedBy();
+            distributeBy.DistributionType = distribution;
+
+            return entityTypeBuilder;
+        }
+
+        #endregion
+
         #region Obsolete
 
         /// <summary>
@@ -397,5 +445,7 @@ namespace Microsoft.EntityFrameworkCore
             => CanSetStorageParameter(entityTypeBuilder, parameterName, parameterValue, fromDataAnnotation);
 
         #endregion Obsolete
+
+
     }
 }

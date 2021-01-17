@@ -515,6 +515,52 @@ INTERLEAVE IN PARENT my_schema.my_parent (col_a, col_b);
 
         #endregion CockroachDB interleave-in-parent
 
+        #region greenplum distributed by
+
+        // Note that we don't run tests against actual Greenplum instances, so these are unit tests asserting on SQL
+        // only
+
+        [Fact]
+        public void CreateTableOperation_with_postgresxl_distribute_by()
+        {
+            var op =
+                new CreateTableOperation
+                {
+                    Name = "People",
+                    Schema = "dbo",
+                    Columns =
+                    {
+                        new AddColumnOperation
+                        {
+                            Name = "Id",
+                            Table = "People",
+                            Schema = "dbo",
+                            ClrType = typeof(int),
+                            IsNullable = false
+                        },
+                    },
+                    PrimaryKey = new AddPrimaryKeyOperation
+                    {
+                        Columns = new[] { "Id" }
+                    }
+                };
+
+            var distributeBy = new GreenplumDistributedBy(op);
+            distributeBy.DistributeByColumnNames = new List<string> { "col_a", "col_b" };
+
+            Generate(op);
+
+            AssertSql(
+                @"CREATE TABLE dbo.""People"" (
+    ""Id"" integer NOT NULL,
+    PRIMARY KEY (""Id"")
+)
+DISTRIBUTED BY (col_a, col_b);
+");
+        }
+
+        #endregion greenplum distributed by
+
 #pragma warning disable 618
         [Fact]
         public virtual void AddColumnOperation_serial_old_annotation_throws()

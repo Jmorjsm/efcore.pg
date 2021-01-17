@@ -94,5 +94,13 @@ namespace Microsoft.EntityFrameworkCore
             => new(entityType);
 
         #endregion CockroachDb interleave in parent
+
+        #region Distribute by
+
+        public static GreenplumDistributedBy GetGreenplumDistributedBy([NotNull] this IEntityType entityType)
+            => new(entityType);
+
+
+        #endregion Distribute by
     }
 }

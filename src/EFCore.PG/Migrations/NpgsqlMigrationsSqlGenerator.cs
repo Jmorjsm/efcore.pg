@@ -184,6 +184,17 @@ namespace Npgsql.EntityFrameworkCore.PostgreSQL.Migrations
                     .Append(")");
             }
 
+            // PostgreSQL-XL -
+            if (operation[GreenplumDistributeByAnnotationNames.DistributeBy] is string)
+            {
+                var distributeBy = new GreenplumDistributedBy(operation);
+                var distributeByProperties = distributeBy.DistributeByColumnNames;
+                builder.AppendLine()
+                    .Append("DISTRIBUTED BY (")
+                    .Append(string.Join(", ", distributeByProperties.Select(c => DelimitIdentifier(c))))
+                    .Append(")");
+            }
+
             var storageParameters = GetStorageParameters(operation);
             if (storageParameters.Count > 0)
             {
